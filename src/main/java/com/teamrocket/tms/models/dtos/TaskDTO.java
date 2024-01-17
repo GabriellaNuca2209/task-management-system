@@ -1,5 +1,6 @@
 package com.teamrocket.tms.models.dtos;
 
+import com.teamrocket.tms.models.entities.Project;
 import com.teamrocket.tms.models.entities.User;
 import com.teamrocket.tms.utils.enums.Priority;
 import com.teamrocket.tms.utils.enums.Status;
@@ -10,6 +11,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
@@ -33,7 +35,7 @@ public class TaskDTO {
 
     private double progress;
 
-    private boolean isComplete;
+    private boolean isObjectiveMapComplete;
 
     private LocalDate dueDate;
 
@@ -41,10 +43,12 @@ public class TaskDTO {
 
     private String reviewedBy;
 
-    private User user;
-
-    private Map<String, String> comments = new HashMap<>();
+    private Map<String, String> comments = new LinkedHashMap<>();
 
     @NotEmpty
     private Map<String, Boolean> objectives = new HashMap<>();
+
+    private Project project;
+
+    private User user;
 }

@@ -1,10 +1,12 @@
 package com.teamrocket.tms.services.user;
 
 import com.teamrocket.tms.exceptions.project.ProjectNotFoundException;
-import com.teamrocket.tms.exceptions.user.UserNotFoundException;
+import com.teamrocket.tms.exceptions.user.UserDoesNotHaveATeamException;
 import com.teamrocket.tms.exceptions.user.UserUnauthorizedActionException;
 import com.teamrocket.tms.models.dtos.*;
-import com.teamrocket.tms.models.entities.*;
+import com.teamrocket.tms.models.entities.Project;
+import com.teamrocket.tms.models.entities.Team;
+import com.teamrocket.tms.models.entities.User;
 import com.teamrocket.tms.repositories.UserRepository;
 import com.teamrocket.tms.services.project.ProjectService;
 import com.teamrocket.tms.services.task.TaskService;
@@ -109,9 +111,10 @@ public class UserServiceImpl implements UserService {
     @Override
     public TaskDTO createTask(TaskDTO taskDTO, Long userId) {
         User userEntity = userServiceValidation.getValidUser(userId, "createTask");
-        String userName = userEntity.getFirstName() + " " + userEntity.getLastName();
+        UserDTO userDTO = modelMapper.map(userEntity, UserDTO.class);
+        userServiceValidation.validateUserNotInATeam(userDTO);
 
-        return taskService.createTask(taskDTO, userName);
+        return taskService.createTask(taskDTO, userDTO, userEntity.getTeam().getProject());
     }
 
     @Override
@@ -132,11 +135,66 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public TaskDTO userCompleteTaskObjectives(Long userId, Long taskId, TaskDTO taskDTO) {
+        return taskService.completeTaskObjectives(userId, taskId, taskDTO);
+    }
+
+    @Override
+    public List<TaskDTO> getFilteredTasks(Long userId, TaskFilterDTO parameters) {
+        User user = userServiceValidation.getValidUser(userId, "getAllTasksForUser");
+        log.info("User with the id {} retrieved.", userId);
+
+        if (user.getTeam() == null) {
+            throw new UserDoesNotHaveATeamException("User is not part of a Team.");
+        }
+
+        return taskService.getFilteredTasks(parameters, user.getTeam().getProject());
+    }
+
+    @Override
+    public TaskDTO reviewTask(Long userId, Long taskId, TaskDTO taskDTO) {
+        User user = userServiceValidation.getValidUser(userId, "reviewTask");
+        String reviewerName = user.getFirstName() + " " + user.getLastName();
+
+        return taskService.userReviewTask(reviewerName, taskId, taskDTO);
+    }
+
+    @Override
+    public List<TaskDTO> getAllTasksForUser(Long userId) {
+        userServiceValidation.getValidUser(userId, "getAllTasksForUser");
+        log.info("User with the id {} retrieved.", userId);
+
+        return taskService.getAllTasksForUser(userId);
+    }
+
+    @Override
+    public TaskDTO addCommentToTask(Long userId, Long taskId, String comment) {
+        User user = userServiceValidation.getValidUser(userId, "addCommentToTask");
+        String userName = user.getFirstName() + " " + user.getLastName();
+
+        return taskService.addCommentToTask(userName, taskId, comment);
+    }
+
+    @Override
     public ProjectDTO createProject(Long userId, ProjectDTO projectDTO) {
         User user = userServiceValidation.getValidUser(userId, "createProject");
         userServiceValidation.validateUserRoleCanPerformAction(user, Role.PROJECT_MANAGER);
 
         return projectService.createProject(projectDTO);
+    }
+
+    @Override
+    public void deleteProject(Long userId, Long id) {
+        ProjectDTO projectDTO = projectService.getProjectById(id);
+        if (projectDTO == null) {
+            throw new ProjectNotFoundException("Project with the id " + id + "not found.");
+        }
+
+        User user = userServiceValidation.getValidUser(userId, "deleteProject");
+        userServiceValidation.validateUserRoleCanPerformAction(user, Role.PROJECT_MANAGER);
+
+        projectService.deleteProject(id);
+        log.info("Project with id {} deleted by user with id {}.", id, userId);
     }
 
     @Override
@@ -202,27 +260,5 @@ public class UserServiceImpl implements UserService {
         User savedUser = userRepository.save(targetUserEntity);
 
         return modelMapper.map(savedUser, UserDTO.class);
-    }
-
-    @Override
-    public List<TaskDTO> getAllTasksForUser(Long userId){
-        userServiceValidation.getValidUser(userId, "getAllTasksForUser");
-        log.info("User with the id {} retrieved.",userId);
-
-        return taskService.getAllTasksForUser(userId);
-    }
-
-    @Override
-    public void deleteProject(Long userId, Long id) {
-        ProjectDTO projectDTO = projectService.getProjectById(id);
-        if (projectDTO == null) {
-            throw new ProjectNotFoundException("Project with the id " + id + "not found.");
-        }
-
-        User user = userServiceValidation.getValidUser(userId, "deleteProject");
-        userServiceValidation.validateUserRoleCanPerformAction(user, Role.PROJECT_MANAGER);
-
-        projectService.deleteProject(id);
-        log.info("Project with id {} deleted by user with id {}.", id, userId);
     }
 }

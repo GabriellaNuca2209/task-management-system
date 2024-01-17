@@ -1,9 +1,6 @@
 package com.teamrocket.tms.controllers;
 
-import com.teamrocket.tms.models.dtos.TaskDTO;
-import com.teamrocket.tms.models.dtos.ProjectDTO;
-import com.teamrocket.tms.models.dtos.TeamDTO;
-import com.teamrocket.tms.models.dtos.UserDTO;
+import com.teamrocket.tms.models.dtos.*;
 import com.teamrocket.tms.services.user.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -31,9 +28,9 @@ public class UserController {
         return ResponseEntity.ok(userService.getAllUsers());
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDTO> getUserById(@PathVariable Long id) {
-        return ResponseEntity.ok(userService.getUserById(id));
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getUserById(userId));
     }
 
     @PutMapping("/{userId}")
@@ -61,6 +58,31 @@ public class UserController {
         return ResponseEntity.ok(userService.getTaskById(userId, taskId));
     }
 
+    @PutMapping("{userId}/tasks/{taskId}")
+    public ResponseEntity<TaskDTO> completeTaskObjective(@PathVariable Long userId, @PathVariable Long taskId, @RequestBody TaskDTO taskDTO) {
+        return ResponseEntity.ok(userService.userCompleteTaskObjectives(userId, taskId, taskDTO));
+    }
+
+    @PutMapping("/{userId}/tasks/filtered")
+    public ResponseEntity<List<TaskDTO>> getFilteredTasks(@PathVariable Long userId, @RequestBody TaskFilterDTO parameters) {
+        return ResponseEntity.ok(userService.getFilteredTasks(userId, parameters));
+    }
+
+    @GetMapping("/{userId}/tasks")
+    public ResponseEntity<List<TaskDTO>> getAllTasksForUser(@PathVariable Long userId) {
+        return ResponseEntity.ok(userService.getAllTasksForUser(userId));
+    }
+
+    @PutMapping("/{userId}/tasks/{taskId}/review")
+    public ResponseEntity<TaskDTO> reviewTask(@PathVariable Long userId, @PathVariable Long taskId, @RequestBody TaskDTO taskDTO) {
+        return ResponseEntity.ok(userService.reviewTask(userId, taskId, taskDTO));
+    }
+
+    @PostMapping("/{userId}/tasks/{taskId}/comments")
+    public ResponseEntity<TaskDTO> addCommentToTask(@PathVariable Long userId, @PathVariable Long taskId, @RequestBody String comment) {
+        return ResponseEntity.ok(userService.addCommentToTask(userId, taskId, comment));
+    }
+
     @PostMapping("/{userId}/projects")
     public ResponseEntity<ProjectDTO> createProject(@PathVariable Long userId, @Valid @RequestBody ProjectDTO projectDTO) {
         return ResponseEntity.ok(userService.createProject(userId, projectDTO));
@@ -69,12 +91,6 @@ public class UserController {
     @PostMapping("/{userId}/teams")
     public ResponseEntity<TeamDTO> createTeam(@PathVariable Long userId, @Valid @RequestBody TeamDTO teamDTO) {
         return ResponseEntity.ok(userService.createTeam(userId, teamDTO));
-    }
-
-    @GetMapping("/{userId}/tasks")
-    public ResponseEntity<List<TaskDTO>> getAllTasksForUser(@PathVariable Long userId) {
-        List<TaskDTO> tasks = userService.getAllTasksForUser(userId);
-        return ResponseEntity.ok(userService.getAllTasksForUser(userId));
     }
 
     @PostMapping("/{userId}/teams/{teamId}/{targetUserId}")

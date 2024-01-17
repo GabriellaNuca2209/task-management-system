@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @Data
@@ -38,7 +39,7 @@ public class Task {
     private double progress;
 
     @Column(name = "is_complete")
-    private boolean isComplete;
+    private boolean isObjectiveMapComplete;
 
     @Column(name = "due_date")
     private LocalDate dueDate;
@@ -56,6 +57,7 @@ public class Task {
 
     @ManyToOne
     @JoinColumn(name = "project_id")
+    @JsonBackReference(value = "projectReference")
     private Project project;
 
     @ElementCollection
@@ -64,7 +66,7 @@ public class Task {
     )
     @MapKeyColumn(name = "user_name")
     @Column(name = "comment")
-    private Map<String, String> comments = new HashMap<>();
+    private Map<String, String> comments = new LinkedHashMap<>();
 
     @ElementCollection
     @CollectionTable(name = "objective_completion",
